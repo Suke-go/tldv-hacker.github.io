@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>tldv Transcript Formatter</title>
+  <style>
+    :root {
+      --bg: #f6fbff;
+      --panel: #ffffff;
+      --accent: #0ea5e9;
+      --accent-strong: #0284c7;
+      --text: #0f172a;
+      --muted: #475569;
+      --border: #e2e8f0;
+      --shadow: 0 15px 45px rgba(15, 23, 42, 0.08);
+      font-family: "Segoe UI", "Noto Sans JP", system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      background: radial-gradient(1200px at 14% 18%, #f3fff5 0%, #eaf6ff 35%, #f6fbff 70%);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
+    h1, h2 {
+      margin: 0;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    p { margin: 8px 0; color: var(--muted); }
+
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      display: grid;
+      gap: 18px;
+    }
+
+    .hero {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 22px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .hero h1 {
+      font-size: 26px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(14, 165, 233, 0.1);
+      color: var(--accent-strong);
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .panel-header h2 {
+      font-size: 18px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 1px solid var(--border);
+      background: linear-gradient(135deg, #0ea5e9, #0284c7);
+      color: #fff;
+      padding: 9px 14px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+    }
+
+    button.secondary {
+      background: #fff;
+      color: var(--text);
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 22px rgba(14, 165, 233, 0.22);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 180px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 14px;
+      font-family: ui-monospace, SFMono-Regular, "SFMono-Regular", Menlo, Consolas, monospace;
+      resize: vertical;
+      background: #fbfdff;
+      color: var(--text);
+    }
+
+    .hint {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .result-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .result-row {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #f8fcff;
+    }
+
+    .result-row .label {
+      font-weight: 700;
+      color: var(--accent-strong);
+    }
+
+    .result-row .content {
+      color: var(--text);
+    }
+
+    .empty {
+      border: 1px dashed var(--border);
+      padding: 18px;
+      border-radius: 12px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .copy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+    }
+
+    .copy-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      background: #f8fbff;
+      display: grid;
+      gap: 10px;
+    }
+
+    .copy-title {
+      font-weight: 700;
+    }
+
+    .copy-card textarea {
+      min-height: 110px;
+      background: #fff;
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    #toast {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      padding: 10px 14px;
+      background: var(--accent-strong);
+      color: #fff;
+      border-radius: 12px;
+      box-shadow: 0 12px 30px rgba(2, 132, 199, 0.35);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 160ms ease, transform 160ms ease;
+      pointer-events: none;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 700px) {
+      body { padding: 12px; }
+      .hero { padding: 16px; }
+      .result-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <div>
+        <h1>tldv Transcript Formatter</h1>
+        <p>main.pyのロジックをブラウザだけで再現。GitHub Pagesに置くだけで使えます。</p>
+      </div>
+      <div class="badge">3つのコピー形式に対応</div>
+    </div>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>1. HTMLを貼り付けてパース</h2>
+        <div class="actions">
+          <button id="sampleBtn" class="secondary">サンプルを入れる</button>
+          <button id="clearBtn" class="secondary">クリア</button>
+        </div>
+      </div>
+      <textarea id="rawHtml" placeholder="tldvからコピーしたHTMLをそのまま貼り付けてください（data-speaker属性を順番に読みます）"></textarea>
+      <div class="actions" style="margin-top: 10px;">
+        <button id="parseBtn">パースして整形する</button>
+      </div>
+      <p class="hint">data-speaker="true" を発言者ラベル、data-speaker="false" を発言内容として扱います。スピーカー名は text-base-800 クラスから取得します。</p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>2. 結果プレビュー</h2>
+        <p id="summary" class="hint">まだ解析していません</p>
+      </div>
+      <div id="results" class="result-list">
+        <div class="empty">パース結果がここに表示されます。</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>3. コピー形式を選択</h2>
+        <p class="hint">ワンクリックでコピーできます。編集したいときはテキストエリアを直接触ってください。</p>
+      </div>
+      <div class="copy-grid">
+        <div class="copy-card">
+          <div class="copy-title">発言者：内容（同じ行）</div>
+          <button data-format="inline">この形式をコピー</button>
+          <textarea id="inlineText" readonly></textarea>
+        </div>
+        <div class="copy-card">
+          <div class="copy-title">発言者：改行して内容</div>
+          <button data-format="stacked">この形式をコピー</button>
+          <textarea id="stackedText" readonly></textarea>
+        </div>
+        <div class="copy-card">
+          <div class="copy-title">発言ごとに1行空ける</div>
+          <button data-format="spaced">この形式をコピー</button>
+          <textarea id="spacedText" readonly></textarea>
+        </div>
+      </div>
+      <p class="footer-note">ブラウザだけで動くので、そのまま GitHub Pages にアップすれば利用できます。</p>
+    </section>
+  </div>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      const rawInput = document.getElementById('rawHtml');
+      const parseBtn = document.getElementById('parseBtn');
+      const results = document.getElementById('results');
+      const summary = document.getElementById('summary');
+      const toast = document.getElementById('toast');
+      const sampleBtn = document.getElementById('sampleBtn');
+      const clearBtn = document.getElementById('clearBtn');
+
+      const outputAreas = {
+        inline: document.getElementById('inlineText'),
+        stacked: document.getElementById('stackedText'),
+        spaced: document.getElementById('spacedText')
+      };
+
+      let transcript = [];
+      let formats = { inline: '', stacked: '', spaced: '' };
+      let toastTimer = null;
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+      }
+
+      function parseTranscript(html) {
+        if (!html.trim()) {
+          return [];
+        }
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const elements = Array.from(doc.querySelectorAll('[data-speaker]'));
+
+        let currentSpeaker = 'Unknown';
+        const parsed = [];
+
+        elements.forEach(el => {
+          const flag = el.getAttribute('data-speaker');
+          if (flag === 'true') {
+            const nameTag = el.querySelector('.text-base-800');
+            if (nameTag && nameTag.textContent.trim()) {
+              currentSpeaker = nameTag.textContent.trim();
+            }
+          } else if (flag === 'false') {
+            const textContent = el.textContent.trim();
+            if (textContent) {
+              parsed.push({ speaker: currentSpeaker, content: textContent });
+            }
+          }
+        });
+        return parsed;
+      }
+
+      function renderResults(list) {
+        results.innerHTML = '';
+        if (!list.length) {
+          const empty = document.createElement('div');
+          empty.className = 'empty';
+          empty.textContent = 'パース結果がここに表示されます。';
+          results.appendChild(empty);
+          summary.textContent = '0件';
+          return;
+        }
+
+        summary.textContent = `${list.length} 件の発言を検出`;
+
+        list.forEach(item => {
+          const row = document.createElement('div');
+          row.className = 'result-row';
+
+          const speaker = document.createElement('div');
+          speaker.className = 'label';
+          speaker.textContent = item.speaker || 'Unknown';
+
+          const content = document.createElement('div');
+          content.className = 'content';
+          content.textContent = item.content;
+
+          row.appendChild(speaker);
+          row.appendChild(content);
+          results.appendChild(row);
+        });
+      }
+
+      function buildFormats(list) {
+        if (!list.length) {
+          return { inline: '', stacked: '', spaced: '' };
+        }
+        const inline = list.map(i => `${i.speaker}: ${i.content}`).join('\n');
+        const stacked = list.map(i => `${i.speaker}:\n${i.content}`).join('\n');
+        const spaced = list.map(i => `${i.speaker}: ${i.content}`).join('\n\n');
+        return { inline, stacked, spaced };
+      }
+
+      function refreshOutputAreas(data) {
+        outputAreas.inline.value = data.inline;
+        outputAreas.stacked.value = data.stacked;
+        outputAreas.spaced.value = data.spaced;
+      }
+
+      async function copyFormat(key) {
+        const text = formats[key] || '';
+        if (!text) {
+          showToast('コピーする内容がありません');
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(text);
+          showToast('コピーしました');
+        } catch (err) {
+          // フォールバック：選択状態にしてユーザーにコピーしてもらう
+          outputAreas[key].focus();
+          outputAreas[key].select();
+          showToast('クリップボードにアクセスできませんでした。手動でコピーしてください。');
+        }
+      }
+
+      function insertSample() {
+        const sample = `
+<p data-index="1" data-speaker="true"><span class="text-base-800">田中</span></p>
+<p data-index="2" data-speaker="false">今日は進捗を共有します。</p>
+<p data-index="3" data-speaker="true"><span class="text-base-800">佐藤</span></p>
+<p data-index="4" data-speaker="false">デザインは最終稿になりました。</p>
+<p data-index="5" data-speaker="false">レビューをお願いします。</p>
+`;
+        rawInput.value = sample.trim();
+      }
+
+      function clearAll() {
+        rawInput.value = '';
+        transcript = [];
+        formats = { inline: '', stacked: '', spaced: '' };
+        renderResults([]);
+        refreshOutputAreas(formats);
+      }
+
+      parseBtn.addEventListener('click', () => {
+        transcript = parseTranscript(rawInput.value);
+        formats = buildFormats(transcript);
+        renderResults(transcript);
+        refreshOutputAreas(formats);
+        showToast('パースしました');
+      });
+
+      document.querySelectorAll('[data-format]').forEach(btn => {
+        btn.addEventListener('click', () => copyFormat(btn.dataset.format));
+      });
+
+      sampleBtn.addEventListener('click', insertSample);
+      clearBtn.addEventListener('click', clearAll);
+    })();
+  </script>
+</body>
+</html>
